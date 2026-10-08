@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>炼妖壶</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Serif+SC:wght@500;600;700;900&family=Noto+Sans+SC:wght@300;400;500;700&display=swap">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg class="brand-mark" viewBox="0 0 48 48" fill="none" aria-hidden="true">
+      <path d="M14 10h20l3 6H11l3-6z" fill="#c2462f" opacity=".85"/>
+      <path d="M11 16h26v4H11v-4z" fill="#8a7354"/>
+      <path d="M8 20h32l-4 18H12L8 20z" fill="#211b16" stroke="#c9a227" stroke-width="1.2"/>
+      <path d="M17 23h14M15 29h18M18 35h12" stroke="#8a7354" stroke-width="1.4" opacity=".8"/>
+      <path d="M20 6c0-2 8-2 8 0" stroke="#d3a93c" stroke-width="1.4"/>
+    </svg>
+    <div>
+      <div class="brand-name">炼妖壶</div>
+      <div class="brand-sub">炼化 · 野外 · 秘境 · 养成</div>
+    </div>
+  </div>
+  <nav class="nav" id="nav">
+    <button data-route="refine">炼化</button>
+    <button data-route="wild">野外</button>
+    <button data-route="build">副本构建</button>
+    <button data-route="settle">秘境连战</button>
+    <button data-route="train">修炼</button>
+    <button data-route="stable">灵兽仓</button>
+    <button data-route="skills">技能</button>
+    <button data-route="dex">图鉴</button>
+    <button data-route="matdex">素材图鉴</button>
+    <button data-route="codex">图鉴编辑</button>
+  </nav>
+  <div class="mode-switch" title="演示模式会大幅提高出灵兽/异色概率，方便体验完整流程">
+    <span>概率</span>
+    <button id="mode-real" class="on">真实</button>
+    <button id="mode-demo" class="">演示</button>
+  </div>
+</header>
+
+<main id="main">
+
+  <!-- ============ 视图：炼化 ============ -->
+  <section class="view" id="view-refine">
+    <div class="view-head">
+      <div class="view-kicker">第一步 · 炼妖壶</div>
+      <h1>素材炼化</h1>
+    </div>
+    <div class="refine-wrap">
+      <div class="card">
+        <h3>素材架<span class="sub">点击投入炉膛</span></h3>
+        <div id="shelf"></div>
+      </div>
+      <div class="refine-side">
+      <div class="card">
+        <h3>炼妖壶<span class="sub" id="cauldron-state">炉火未燃</span></h3>
+        <div class="cauldron-zone">
+          <div class="cauldron idle" id="cauldron">
+            <div class="glow"></div>
+            <svg viewBox="0 0 230 250" fill="none" aria-hidden="true">
+              <path d="M92 52h46l6 16H86l6-16z" fill="#c2462f" opacity=".8"/>
+              <path d="M86 68h58v8H86v-8z" fill="#8a7354"/>
+              <path d="M78 76h74l-10 128H88L78 76z" fill="#241d16" stroke="#c9a227" stroke-width="1.6"/>
+              <path d="M104 92h22M100 110h30M96 128h38M92 146h46M94 164h42M100 182h30" stroke="#8a7354" stroke-width="1.6" opacity=".7"/>
+              <path d="M86 76l-12 60M144 76l12 60" stroke="#6b5a44" stroke-width="2" opacity=".6"/>
+              <circle cx="84" cy="88" r="3" fill="#4f8a75" opacity=".7"/>
+              <circle cx="146" cy="102" r="3" fill="#4f8a75" opacity=".7"/>
+              <circle cx="90" cy="150" r="3" fill="#4f8a75" opacity=".7"/>
+              <circle cx="140" cy="170" r="3" fill="#4f8a75" opacity=".7"/>
+            </svg>
+            <div class="flame-wrap">
+              <div class="flame f1"></div><div class="flame f2"></div><div class="flame f3"></div>
+            </div>
+          </div>
+          <div class="furnace-slot" id="furnace">
+            <span class="furnace-hint">炉膛空空，投入素材开始炼化</span>
+          </div>
+          <button class="btn primary" id="btn-refine" disabled>起炉炼化</button>
+        </div>
+        <div class="sep"></div>
+        <div id="refine-preview"></div>
+      </div>
+      <div class="card">
+        <h3>炼化手札<span class="sub">本次会话记录</span></h3>
+        <div class="refine-log" id="refine-log"></div>
+      </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 视图：野外 ============ -->
+  <section class="view" id="view-wild">
+    <div class="view-head">
+      <div class="view-kicker">素材之源 · 野外冒险</div>
+      <h1>野外冒险</h1>
+    </div>
+    <div id="wild-root"></div>
+  </section>
+
+  <!-- ============ 视图：副本构建 ============ -->
+  <section class="view" id="view-build">
+    <div class="view-head">
+      <div class="view-kicker">第二步 · 构建副本</div>
+      <h1>副本构建</h1>
+    </div>
+    <div class="build-grid">
+      <div class="card">
+        <h3>出战灵兽<span class="sub">妖兽无法进入副本</span></h3>
+        <div class="spirit-pick" id="build-spirits"></div>
+        <div class="sep"></div>
+        <div id="build-basic"></div>
+      </div>
+      <div class="card">
+        <h3>素材投入<span class="sub">点击加号从仓库选取 · 点击方格撤回 · 决定敌人与奖励池</span></h3>
+        <div id="build-mats"></div>
+        <div class="sep"></div>
+        <h3>存在分预览 <span class="sub">每属性 1000 分 · 附加技能/专长侵占 250</span></h3>
+        <div class="pool-view" id="pool-view"></div>
+        <div class="sep"></div>
+        <h3>敌人预览 <span class="sub">5 单位素材 → 1 敌 · 出场顺序随机</span></h3>
+        <div id="enemy-preview"></div>
+        <div class="modal-actions" style="margin-top:16px">
+          <button class="btn primary" id="btn-depart">起程入秘境</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 视图：副本战斗与结算 ============ -->
+  <section class="view" id="view-settle">
+    <div class="view-head">
+      <div class="view-kicker">第三步 · 副本战斗</div>
+      <h1>秘境连战 <button type="button" class="help-q" data-tip="逐场单挑。击杀获得 5 倍经验。每 5 场回满，并获得一层本场增益。">?</button></h1>
+    </div>
+    <div id="settle-root"></div>
+  </section>
+
+  <!-- ============ 视图：灵兽仓 ============ -->
+  <section class="view" id="view-stable">
+    <div class="view-head">
+      <div class="view-kicker">第四步 · 灵兽仓</div>
+      <h1>灵兽与妖兽 <button type="button" class="help-q" data-tip="普通灵兽一种至多一只，异色灵兽不限；每一只灵兽都有唯一的来源与履历。重复炼化同种普通灵兽，会化作该灵兽的专属精魄（如烬烬狼精魄），供养你已有的那只。">?</button></h1>
+    </div>
+    <div class="stable-stats" id="stable-stats"></div>
+    <h3 style="font-family:var(--serif);letter-spacing:.14em;font-size:14px;color:var(--paper-dim);margin:6px 0 12px">灵兽 · 普通形态（同种唯一）</h3>
+    <div class="stable-grid" id="stable-spirits"></div>
+    <h3 style="font-family:var(--serif);letter-spacing:.14em;font-size:14px;color:var(--paper-dim);margin:24px 0 12px">灵兽 · 异色形态（不限持有）</h3>
+    <div class="stable-grid" id="stable-shinies"></div>
+    <h3 style="font-family:var(--serif);letter-spacing:.14em;font-size:14px;color:var(--paper-dim);margin:24px 0 12px">妖兽</h3>
+    <div class="stable-grid" id="stable-beasts"></div>
+  </section>
+
+  <!-- ============ 视图：修炼（挂机） ============ -->
+  <section class="view" id="view-train">
+    <div class="view-head">
+      <div class="view-kicker">第五步 · 挂机修炼</div>
+      <h1>修炼场 <button type="button" class="help-q" data-tip="只有灵兽可挂机。挂机期间不能进入野外或秘境。收获为经验、亲和或熟练度，并留下可复刻的记录。">?</button></h1>
+    </div>
+    <div id="train-root"></div>
+  </section>
+
+  <!-- ============ 视图：技能池（M3-P0） ============ -->
+  <section class="view" id="view-skills">
+    <div class="view-head">
+      <div class="view-kicker">战斗基石 · 技能池</div>
+      <h1>技能池 <button type="button" class="help-q" data-tip="全部技能按直接攻击、绝技、爆发技、机制组织，点击任意技能即可编辑，「新增技能」直接入池。素材构建副本时，存在分抽取的技能范围来自下方各属性池。">?</button></h1>
+    </div>
+    <div id="skills-root"></div>
+  </section>
+
+  <!-- ============ 视图：图鉴收集（M2-C） ============ -->
+  <section class="view" id="view-dex">
+    <div class="view-head">
+      <div class="view-kicker">灵兽收集录</div>
+      <h1>图鉴 <button type="button" class="help-q" data-tip="遇见、收服或进化后点亮。收集达到档位可领取洗髓露。">?</button></h1>
+    </div>
+    <div id="dex-root"></div>
+  </section>
+  <!-- ============ 视图：素材图鉴 ============ -->
+  <section class="view" id="view-matdex">
+    <div class="view-head">
+      <div class="view-kicker">素材图鉴</div>
+      <h1>素材图鉴 <button type="button" class="help-q" data-tip="矿石、植物、妖兽素材与专属精魄的完整图鉴。获得过即点亮，用尽也不熄灭。点击查看详情与生态、外观。">?</button></h1>
+    </div>
+    <div id="matdex-root"></div>
+  </section>
+  <!-- ============ 视图：图鉴编辑 ============ -->
+  <section class="view" id="view-codex">
+    <div class="view-head">
+      <div class="view-kicker">素材与精灵 · 可编辑图鉴</div>
+      <h1>图鉴编辑 <button type="button" class="help-q" data-tip="点击素材或精灵即可修改。素材品质为普通、优秀、精良、稀有、史诗、传奇。">?</button></h1>
+    </div>
+    <div class="codex-grid">
+      <div class="card">
+        <div class="codex-head">
+          <h3>素材库<span class="sub">点击素材可编辑 · 字段：属性 / 品质 / 类型 / 标签</span></h3>
+          <button class="btn sm" id="btn-add-mat">＋ 新增素材</button>
+        </div>
+        <div id="codex-mats"></div>
+      </div>
+      <div class="card">
+        <div class="codex-head">
+          <h3>精灵物种<span class="sub">点击物种可编辑 · 影响炼化候选与野外出没</span></h3>
+          <button class="btn sm" id="btn-add-sp">＋ 新增精灵</button>
+        </div>
+        <div id="codex-species"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="codex-head">
+          <h3>技能池<span class="sub">直接攻击 / 绝技 / 爆发技 · 词条参与副本存在分匹配 · 点击技能可编辑</span></h3>
+          <button class="btn sm" id="btn-add-skill">＋ 新增技能</button>
+        </div>
+        <div id="codex-skills"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="codex-head">
+          <h3>炼化映射表<span class="sub">条件（元素 / 品质 / 类型 / 数量 / 混沌）→ 产出池（微粒 / 结晶 / 凝胶 / 标准灵材 / 萌芽 / 灵兽）</span></h3>
+          <button class="btn sm" id="btn-add-rule">＋ 新增规则</button>
+        </div>
+        <div id="codex-rules"></div>
+      </div>
+      <div class="card" style="grid-column:1/-1;">
+        <div class="codex-head">
+          <h3>管理员道具<span class="sub">测试 / 调试用，不进入玩家获取链（修改性格与个体值的道具）</span></h3>
+        </div>
+        <div id="codex-admin"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal" id="modal-box"></div>
+</div>
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<script src="data/mats.js"></script>
+<script src="data/species.js"></script>
+<script src="data/skills.js"></script>
+<script src="data/terrain.js"></script>
+<script src="data/events.js"></script>
+<script src="data/overworld.js"></script>
+<script src="src/sim/types.js"></script>
+<script src="src/view/mat-grid.js"></script>
+<script src="src/sim/esc.js"></script>
+<script src="src/view/tooltip.js"></script>
+<script src="src/sim/nature.js"></script>
+<script src="src/sim/skills.js"></script>
+<script src="src/sim/inventory.js"></script>
+<script src="src/sim/state.js"></script>
+<script src="src/sim/beta.js"></script>
+<script src="src/sim/stats.js"></script>
+<script src="src/sim/evolve.js"></script>
+<script src="src/sim/growth.js"></script>
+<script src="src/view/dom.js"></script>
+<script src="src/sim/escape-html.js"></script>
+<script src="src/view/toast.js"></script>
+<script src="src/sim/query.js"></script>
+<script src="src/view/tags.js"></script>
+<script src="src/view/train.js"></script>
+<script src="src/view/screen.js"></script>
+<script src="src/view/refine.js"></script>
+<script src="src/sim/catalog.js"></script>
+<script src="src/sim/dex.js"></script>
+<script src="src/sim/materials.js"></script>
+<script src="src/sim/words.js"></script>
+<script src="src/sim/furnace.js"></script>
+<script src="src/view/furnace.js"></script>
+<script src="src/sim/refine.js"></script>
+<script src="src/view/refine-play.js"></script>
+<script src="src/sim/refine-resolve.js"></script>
+<script src="src/view/landing.js"></script>
+<script src="src/sim/clock.js"></script>
+<script src="src/view/overlay.js"></script>
+<script src="src/sim/land.js"></script>
+<script src="src/view/dungeon-build.js"></script>
+<script src="src/sim/dungeon-plan.js"></script>
+<script src="src/view/dungeon-pool.js"></script>
+<script src="src/sim/enemy.js"></script>
+<script src="src/view/enemy-preview.js"></script>
+<script src="src/sim/dungeon-enemy.js"></script>
+<script src="src/view/depart.js"></script>
+<script src="src/sim/dungeon-battle.js"></script>
+<script src="src/view/dungeon-result.js"></script>
+<script src="src/sim/dungeon-reward.js"></script>
+<script src="src/view/settle.js"></script>
+<script src="src/sim/events.js"></script>
+<script src="src/sim/wild-spawn.js"></script>
+<script src="src/sim/sandbox.js"></script>
+<script src="src/sim/damage.js"></script>
+<script src="src/sim/status.js"></script>
+<script src="src/sim/battle.js"></script>
+<script src="src/sim/exp.js"></script>
+<script src="src/sim/stamina.js"></script>
+<script src="src/view/feed.js"></script>
+<script src="src/sim/train.js"></script>
+<script src="src/view/train-run.js"></script>
+<script src="src/sim/loot.js"></script>
+<script src="src/view/wild.js"></script>
+<script src="src/sim/gather.js"></script>
+<script src="src/view/gather.js"></script>
+<script src="src/sim/wild-loot.js"></script>
+<script src="src/view/battle.js"></script>
+<script src="src/view/battle-bridge.js"></script>
+<script src="src/view/battle-result.js"></script>
+<script src="src/sim/event-reward.js"></script>
+<script src="src/view/event-chain.js"></script>
+<script src="src/sim/event-battle.js"></script>
+<script src="src/view/wild-result.js"></script>
+<script src="src/sim/camp.js"></script>
+<script src="src/view/stable.js"></script>
+<script src="src/sim/skill-filter.js"></script>
+<script src="src/view/skills.js"></script>
+<script src="src/view/dex.js"></script>
+<script src="src/view/codex.js"></script>
+<script src="src/sim/codex-rules.js"></script>
+<script src="src/view/codex-forms.js"></script>
+<script src="src/sim/equip.js"></script>
+<script src="src/view/detail.js"></script>
+<script src="src/view/coronation.js"></script>
+<script src="src/sim/coronation.js"></script>
+<script src="src/app/boot.js"></script>
+</body>
+</html>

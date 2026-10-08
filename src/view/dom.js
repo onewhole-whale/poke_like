@@ -1,0 +1,5 @@
+
+
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+const el = (tag, cls, html) => { const n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n; };
