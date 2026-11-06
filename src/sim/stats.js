@@ -67,3 +67,21 @@ function spiritStats(s){
   }
   return {atk:Math.round(atk), def:Math.round(def), spa:Math.round(spa), sdef:Math.round(sdef), hp:Math.round(hp), spd:Math.round(spd)};
 }
+/* 六维进度条上限：全图鉴里，该维在满级（50+灵根10）、个体 20、有利性格 +10% 下的最高面板。生命不受性格修正。 */
+function statCeilings(){
+  const lvl = BASE_LVL_CAP + 10;
+  const iv = Math.round(20*2*lvl/100);
+  const mk = r => Math.floor(2*r*lvl/100);
+  const line = race => Math.round((mk(race)+5+iv)*1.1);
+  const ceil = {hp:1, atk:1, def:1, spa:1, sdef:1, spd:1};
+  allSpecies().forEach(sp=>{
+    const b = speciesBase(sp);
+    ceil.hp = Math.max(ceil.hp, Math.round(mk(b.hp)+lvl+10+iv));
+    ceil.atk = Math.max(ceil.atk, line(b.atk));
+    ceil.def = Math.max(ceil.def, line(b.def));
+    ceil.spa = Math.max(ceil.spa, line(b.spa));
+    ceil.sdef = Math.max(ceil.sdef, line(b.sdef));
+    ceil.spd = Math.max(ceil.spd, line(b.spe));
+  });
+  return ceil;
+}

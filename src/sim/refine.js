@@ -222,7 +222,8 @@ function comboInfo(){
   const value = mats.length;
   // 仅定向配方可出灵兽（无泛匹配）：命中定向即共享 1%
   const chance = sc.directed ? (S.demo ? .28 : .01) : 0;
-  const shiny = S.demo ? .18 : .05;
+  const shinyRate = S.demo ? .18 : .05;
+  const shiny = cands.some(id=>hasShinyArt(id)) ? shinyRate : 0;
   const outLing = 1 + Math.floor(value/4);
   return {cands, directed:sc.directed, chance:Math.min(.95,chance), shiny, sprout:.08, value, outLing, hasValue, extras, bPool, sPool};
 }

@@ -38,8 +38,8 @@ var MAP_CONFIGS = {
       },
       // M3-1-6：地块级敌人池（按属性偏向）
       tilePools:{
-        grassland:    {fight_normal:{species:['JL_grass_normal_0012','JL_wind_normal_0041','JL_fire_normal_0001'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_grass_elite_0013','JL_wind_elite_0042'], weights:{elite:8, perfect:2}}, fight_boss:{species:['JL_grass_perfect_0014'], weights:{perfect:8}}},
-        plain_forest: {fight_normal:{species:['JL_grass_normal_0012','JL_wind_normal_0041'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_grass_elite_0013'], weights:{elite:8}}, fight_boss:{species:['JL_grass_perfect_0014'], weights:{perfect:8}}},
+        grassland:    {fight_normal:{species:['JL_wind_normal_0077','JL_wind_normal_0041','JL_fire_normal_0001'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_wind_elite_0078','JL_wind_elite_0042'], weights:{elite:8, perfect:2}}, fight_boss:{species:['JL_wind_perfect_0079'], weights:{perfect:8}}},
+        plain_forest: {fight_normal:{species:['JL_wind_normal_0077','JL_wind_normal_0041'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_wind_elite_0078'], weights:{elite:8}}, fight_boss:{species:['JL_wind_perfect_0079'], weights:{perfect:8}}},
         lake:         {fight_normal:{species:['JL_water_normal_0023'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_water_elite_0024'], weights:{elite:8}}, fight_boss:{species:['JL_water_perfect_0025'], weights:{perfect:8}}},
         river:        {fight_normal:{species:['JL_water_normal_0023'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_water_elite_0024'], weights:{elite:8}}, fight_boss:{species:['JL_water_perfect_0025'], weights:{perfect:8}}},
         hill:         {fight_normal:{species:['JL_earth_normal_0046'], weights:{normal:8, elite:2}}, fight_elite:{species:['JL_earth_elite_0047'], weights:{elite:8}}, fight_boss:{species:['JL_earth_perfect_0048'], weights:{perfect:8}}},
@@ -88,7 +88,7 @@ var MAP_CONFIGS = {
       eventCounts:{fight_normal:10, fight_elite:3, fight_boss:1, adventure:2, wonder:2},
       difficultyDist:{easy:.25, normal:.5, hard:.25},
       fightPools:{
-        fight_normal:{species:['JL_water_normal_0023','JL_poison_normal_0080','JL_grass_normal_0012','JL_ghost_normal_0094'], weights:{normal:8, elite:3}},
+        fight_normal:{species:['JL_water_normal_0023','JL_poison_normal_0080','JL_wind_normal_0077','JL_ghost_normal_0094'], weights:{normal:8, elite:3}},
         fight_elite:{species:['JL_water_elite_0024','JL_poison_elite_0081'], weights:{elite:8, perfect:2}},
         fight_boss:{species:['JL_poison_perfect_0082','JL_water_perfect_0025'], weights:{perfect:8, elite:2}},
       },
@@ -99,7 +99,7 @@ var MAP_CONFIGS = {
       },
       eventParams:{
         fight_weak: {enemies:[{speciesId:'JL_water_normal_0023', template:'normal'}]},
-        fight_clean:{enemies:[{speciesId:'JL_poison_normal_0080', template:'normal'},{speciesId:'JL_grass_normal_0012', template:'normal'}]},
+        fight_clean:{enemies:[{speciesId:'JL_poison_normal_0080', template:'normal'},{speciesId:'JL_wind_normal_0077', template:'normal'}]},
         fight_beat: {enemies:[{speciesId:'JL_poison_elite_0081', template:'elite'}]},
       },
       extraDrops:{fight_normal:[],fight_elite:[],fight_boss:[]},

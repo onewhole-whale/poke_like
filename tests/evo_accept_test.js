@@ -125,7 +125,7 @@ console.log('③ 进化结算');
 T.S.spirits=[];
 const sp = T.makeSpirit('JL_fire_normal_0001', false, '测试来源'); 
 sp.lvl=30; sp.exp=12345; sp.bonusLv=2; sp.nature='hardy'; sp.iv={atk:31,hp:10}; sp.perks=['secondwind','blaze-affinity'];
-sp.aff={fire:70,water:55}; sp.shiny=true; sp.source='山河秘境';
+sp.aff={fire:70,water:55}; sp.shiny=false; sp.source='山河秘境';
 sp.skills=[{id:'fire-d0',name:'火花',kind:'direct',cost:1,elem:'fire',mastery:88}];
 sp.skillPool=[{id:'fire-d1',name:'火球',kind:'direct',cost:1,elem:'fire',mastery:30}];
 T.S.spirits.push(sp);

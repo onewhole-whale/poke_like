@@ -391,7 +391,7 @@ section(out, 'battle', () => {
   const beastId = S.beasts[0].id;
   S.wild.spiritId = 'beast:' + beastId;
   S.wild.phase = 'battle';
-  const ally = wildBeast('JL_grass_normal_0012', 1);
+  const ally = wildBeast('JL_wind_normal_0077', 1);
   ally.maxHp = 50; ally.hp = 50;
   startBattle(ally, 'normal', []);
   const ws = wildSpirit();

@@ -43,7 +43,8 @@ function genWildNodes(zoneId){
 }
 function wildBeast(speciesId, lvl){
   let sp = allSpeciesDef(speciesId);
-  if(!sp){ sp = allSpeciesDef('JL_fire_normal_0001'); }  // fallback 防无效 id 崩溃
+  // 无效 id 时整只按 fallback 物种生成（含 speciesId），避免名字/立绘/掉落各走各的
+  if(!sp){ speciesId = 'JL_fire_normal_0001'; sp = allSpeciesDef(speciesId); }
   const base = speciesBase(sp);
   if(typeof lvl!=='number') lvl = sp.rarity==='legend' ? 6 : (sp.rarity==='perfect' ? 5 : (sp.rarity==='elite' ? 3 : 1));
   const mk = r => Math.floor(2*r*lvl/100);
@@ -140,15 +141,13 @@ function applyTemplate(beast, template){
 /* 从地图 fightPool 按品质权重选怪 */
 function pickPoolSpecies(pool){
   const w = pool.weights||{normal:6, elite:3, perfect:1.2, legend:.25};
-  const total = pool.species.reduce((a,sid)=>{
-    const sp = allSpeciesDef(sid); if(!sp) return a;
-    return a + (w[sp.rarity]||1);
-  },0);
+  const valid = (pool.species||[]).filter(sid=>allSpeciesDef(sid));
+  if(!valid.length) return 'JL_fire_normal_0001';
+  const total = valid.reduce((a,sid)=> a + (w[allSpeciesDef(sid).rarity]||1), 0);
   let r = Math.random()*total;
-  for(const sid of pool.species){
-    const sp = allSpeciesDef(sid); if(!sp) continue;
-    r -= (w[sp.rarity]||1);
+  for(const sid of valid){
+    r -= (w[allSpeciesDef(sid).rarity]||1);
     if(r<=0) return sid;
   }
-  return pool.species[0];
+  return valid[0];
 }

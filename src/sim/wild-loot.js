@@ -35,6 +35,6 @@ function skillMeta(def){
   if(def.kind==='ult') return tr+' · 绝技 · 耗能'+e+effTxt;
   return tr+' · 每段'+Math.round(def.power/def.hits)+' × '+def.hits+' 段 · 总威'+def.power+(e?' · 耗能'+e:' · 0耗');
 }
-/* M3-2 补丁 2.1：立绘 emoji 占位（按属性区分，M3-3 立绘接入前先用于区分形象） */
+/* 属性 emoji。战斗立绘优先用 assets/portraits/<编号>_<物种id>.png，异色用 shiny/ 下同名文件，没有图时退回这里 */
 const ELEM_ICON = {water:'💧',fire:'🔥',grass:'🌿',earth:'🪨',wind:'🌪️',steel:'⚙️',ice:'❄️',thunder:'⚡',poison:'☠️',light:'✨',ghost:'👻',fight:'🥋',dark:'🌑',bug:'🐛',psy:'🔮',normal:'⭐'};
 function elemIcon(e, fb){ return ELEM_ICON[e] || fb || '🐾'; }

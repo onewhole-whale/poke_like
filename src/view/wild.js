@@ -2,6 +2,7 @@
 
 /* 渲染野外视图 */
 function renderWild(){
+  if(typeof syncAdventureChrome==='function') syncAdventureChrome();
   const root = $('#wild-root'); root.innerHTML='';
   const w = S.wild;
   // 战斗中：优先渲染战斗（state 可能仍为 idle/detail）
@@ -26,6 +27,11 @@ function renderWild(){
   const ws0 = wildSpirit();
   if(ws0){ bag.appendChild(el('span','bag-item',essenceName(ws0.speciesId)+' <b>'+essenceOf(ws0.speciesId)+'</b>')); }
   top.appendChild(bag);
+  if(w.state==='idle' || w.state==='detail'){
+    const ex = el('button','btn sm','灵息 ×2 换普通斧');
+    ex.onclick = ()=> exchangeTool();
+    top.appendChild(ex);
+  }
   root.appendChild(top);
 
   if(w.state==='idle'){
@@ -281,37 +287,135 @@ function renderWildGrid(){
   };
   actRow.appendChild(ret);
   card.appendChild(actRow);
-  // 网格
-  const grid = el('div','sandbox-grid','');
-  grid.style.display='grid';
-  grid.style.gridTemplateColumns='repeat('+g.size+', 48px)';
-  grid.style.gap='3px';
-  for(let y=0;y<g.size;y++){
-    for(let x=0;x<g.size;x++){
+  // 正方形顶视图，格子横平竖直，和画的方向一致。
+  const TILE_ART = {
+    grassland:'assets/tiles/grassland.png',
+    savanna:'assets/tiles/savanna.png',
+    gobi:'assets/tiles/gobi.png',
+    tundra:'assets/tiles/tundra.png',
+    swamp:'assets/tiles/swamp.png',
+    poison_swamp:'assets/tiles/poison_swamp.png',
+    plain_forest:'assets/tiles/plain_forest.png',
+    lake:'assets/tiles/lake.png',
+    mudflat:'assets/tiles/mudflat.png',
+    beach:'assets/tiles/beach.png',
+    hill:'assets/tiles/hill.png',
+    mountain:'assets/tiles/mountain.png',
+    mountain_forest:'assets/tiles/mountain_forest.png',
+    valley:'assets/tiles/valley.png?v=2',
+    valley_forest:'assets/tiles/valley_forest.png',
+    plateau:'assets/tiles/plateau.png',
+    plateau_cut:'assets/tiles/plateau_cut.png',
+    plateau_forest:'assets/tiles/plateau_forest.png',
+    volcano:'assets/tiles/volcano.png'
+  };
+  const RIVER_STRAIGHT = 'assets/tiles/river_straight.png';
+  const RIVER_BEND = 'assets/tiles/river_bend.png';
+  // 直行图开口在上下，拐弯图开口在上和左。按相邻河流（河口也算湖泊）转正。
+  const riverPiece = (x, y)=>{
+    const dirs = [[0,-1,'N'],[1,0,'E'],[0,1,'S'],[-1,0,'W']];
+    const rivers = [], lakes = [];
+    dirs.forEach(([dx,dy,name])=>{
+      const nx=x+dx, ny=y+dy;
+      if(nx<0||ny<0||nx>=n||ny>=n) return;
+      const t = g.cells[ny][nx].terrain;
+      if(t==='river') rivers.push(name);
+      else if(t==='lake') lakes.push(name);
+    });
+    const conn = rivers.slice();
+    if(conn.length<2) lakes.forEach(name=>{ if(conn.length<2) conn.push(name); });
+    const has = k=>conn.indexOf(k)>=0;
+    const horiz = has('E')||has('W');
+    const vert = has('N')||has('S');
+    if(conn.length>=2 && horiz && vert){
+      let deg = 0;
+      if(has('N')&&has('E')) deg = 90;
+      else if(has('E')&&has('S')) deg = 180;
+      else if(has('S')&&has('W')) deg = 270;
+      return {url:RIVER_BEND, deg:deg};
+    }
+    return {url:RIVER_STRAIGHT, deg: horiz && !vert ? 90 : 0};
+  };
+  const s = 72, n = g.size, side = n*s;
+  const grid = el('div','sandbox-iso','');
+  grid.style.display = 'grid';
+  grid.style.position = 'relative';
+  grid.style.width = side+'px';
+  grid.style.height = side+'px';
+  grid.style.margin = '8px auto 4px';
+  grid.style.transform = 'none';
+  grid.style.gridTemplateColumns = 'repeat('+n+','+s+'px)';
+  grid.style.gridTemplateRows = 'repeat('+n+','+s+'px)';
+  for(let y=0;y<n;y++){
+    for(let x=0;x<n;x++){
       const c = g.cells[y][x];
       const tpl = TERRAIN[c.terrain];
       const cell = el('div','sandbox-cell');
-      cell.style.width='48px'; cell.style.height='48px';
-      cell.style.borderRadius='4px'; cell.style.display='flex';
-      cell.style.flexDirection='column'; cell.style.alignItems='center';
-      cell.style.justifyContent='center'; cell.style.fontSize='18px';
-      cell.style.cursor='pointer';
+      cell.style.width = s+'px';
+      cell.style.height = s+'px';
+      cell.style.display = 'flex';
+      cell.style.alignItems = 'center';
+      cell.style.justifyContent = 'center';
+      cell.style.overflow = 'hidden';
+      cell.style.backgroundSize = 'cover';
+      cell.style.backgroundPosition = 'center';
       const isPlayer = (x===w.px && y===w.py);
       const isAdj = Math.abs(x-w.px)+Math.abs(y-w.py)===1;
+      const face = el('div','tile-face');
+      face.style.transform = 'none';
+      face.style.display = 'flex';
+      face.style.flexDirection = 'column';
+      face.style.alignItems = 'center';
+      face.style.justifyContent = 'center';
+      face.style.textAlign = 'center';
+      face.style.pointerEvents = 'none';
+      face.style.position = 'relative';
+      face.style.zIndex = '1';
       if(c.isExit && !c.explored){
         cell.style.background='#5b3a8e'; cell.style.color='#ffd966'; cell.style.fontWeight='bold';
-        cell.textContent='出口';
-        cell.style.fontSize='11px';
+        face.textContent='出口';
+        face.style.fontSize='11px';
       } else if(!c.explored){
-        cell.style.background='#2a2a35'; cell.style.color='#2a2a35'; cell.textContent='·';
+        cell.style.background='#34343f'; cell.style.color='#6a6a78';
+        face.textContent='·';
       } else {
-        cell.style.background = isPlayer ? '#3a6ea5' : '#3d3d4d';
-        cell.style.color = '#cfd3dc';
-        if(c.looted) cell.style.opacity='0.45';
-        let icon = tpl.icon;
+        let art = TILE_ART[c.terrain];
+        let artDeg = 0;
+        if(c.terrain==='river'){
+          const piece = riverPiece(x,y);
+          art = piece.url; artDeg = piece.deg;
+        }
+        if(art){
+          const bg = el('div','tile-art');
+          bg.style.position = 'absolute';
+          bg.style.inset = '0';
+          bg.style.backgroundImage = "url('"+art+"')";
+          bg.style.backgroundSize = 'cover';
+          bg.style.backgroundPosition = 'center';
+          bg.style.pointerEvents = 'none';
+          if(artDeg) bg.style.transform = 'rotate('+artDeg+'deg)';
+          cell.style.position = 'relative';
+          cell.appendChild(bg);
+        } else cell.style.background = '#3d3d4d';
+        cell.style.color = '#f3efe6';
+        if(c.looted) cell.style.opacity='0.55';
+        let icon = art ? '' : tpl.icon;
         if(c.event && !c.resolved && c.event.kind==='fight'){ icon = c.event.template==='boss'?'👹':(c.event.template==='elite'?'👺':'⚔'); }
         else if(c.event && !c.resolved && c.event.kind==='wonder'){ icon='❓'; }
-        cell.innerHTML = '<div>'+icon+'</div><div style="font-size:9px">'+(c.plant>0||c.ore>0?(c.plant>0?'植':'')+(c.ore>0?'矿':''):'')+'</div>';
+        if(icon) face.appendChild(el('div',null, icon));
+        if(!art) face.appendChild(el('div','tile-name', esc(tpl.name)));
+      }
+      cell.appendChild(face);
+      if(isPlayer){
+        cell.classList.add('me');
+        cell.style.position = 'relative';
+        const ring = el('div','tile-me');
+        ring.style.position = 'absolute';
+        ring.style.inset = '0';
+        ring.style.boxShadow = 'inset 0 0 0 3px #ffd966, inset 0 0 0 5px rgba(0,0,0,.55)';
+        ring.style.pointerEvents = 'none';
+        ring.style.zIndex = '4';
+        cell.appendChild(ring);
       }
       // 点击：相邻格→移动；当前格→采集
       cell.onclick = ()=>{
@@ -389,6 +493,7 @@ function moveTo(x,y){
   if(!g) return;
   if(x<0 || y<0 || x>=g.size || y>=g.size) return;   // 越界保护
   if(!spendStamina(1)){ toast('体力不足（移动需 1 点）','bad'); return; }
+  w.cameFrom = {x:w.px, y:w.py};
   w.px = x; w.py = y;
   const c = w.grid.cells[y][x];
   c.explored = true;

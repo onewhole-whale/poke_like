@@ -26,3 +26,27 @@ function beastDrops(speciesId, mode){
 function applyLoot(drops){
   Object.keys(drops).forEach(k=>{ matState[k] = (matState[k]||0)+drops[k]; markMatSeen(k); });
 }
+/* 地图 extraDrops：精英/首领击杀时按权重抽一件 DJ_ 进 toolInv（仅展示过的配置真正生效） */
+function applyMapExtraDrops(template){
+  const mid = S.wild && S.wild.mapId;
+  const cfg = mid && MAP_CONFIGS[mid];
+  const ec = cfg && cfg.eventConfig;
+  if(!ec || !ec.extraDrops) return null;
+  const key = template==='boss' ? 'fight_boss' : (template==='elite' ? 'fight_elite' : 'fight_normal');
+  const pool = ec.extraDrops[key] || [];
+  if(!pool.length) return null;
+  const total = pool.reduce((a,e)=>a+(e.weight||1), 0);
+  let r = Math.random() * total;
+  let pick = pool[0];
+  for(const e of pool){ r -= (e.weight||1); if(r<=0){ pick=e; break; } }
+  if(!pick || !pick.itemId) return null;
+  const id = pick.itemId;
+  S.toolInv = S.toolInv||{};
+  S.toolInv[id] = (S.toolInv[id]||0)+1;
+  const it = (typeof ITEMS!=='undefined' && ITEMS[id]) || null;
+  if(it && it.type==='tool'){
+    S.toolDur = S.toolDur||{};
+    if(S.toolDur[id]==null) S.toolDur[id] = it.durability||it.maxDurability||100;
+  }
+  return it ? it.name : id;
+}

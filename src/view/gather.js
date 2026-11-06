@@ -74,7 +74,7 @@ function renderWildNode(node){
     const opts = [
       {t:'正面 · 安抚', d:'40% 免战，掉落少量素材；失败则被发现并进入战斗', act:'calm', cls:''},
       {t:'正面 · 战斗', d:'正面对峙，按速度决定谁先手', act:'fight', cls:''},
-      {t:'悄悄 · 离开', d:'不发生战斗，本格标记为已探索', act:'leave', cls:''},
+      {t:'悄悄 · 离开', d:'算逃离：不完成战斗，退回上一格，妖兽还在', act:'leave', cls:''},
       {t:'悄悄 · 安抚', d:'成功率提高五成（60%）；失败仍会暴露', act:'calm-sneak', cls:''},
       {t:'悄悄 · 突袭', d:'突袭先手一击，再正常战斗', act:'sneak', cls:'primary2'},
     ];
@@ -104,7 +104,16 @@ function renderWildNode(node){
       const o = opts.find(x=>x.act===act);
       const b = el('button','action-btn '+o.cls,'<span class="ab-t">'+o.t+'</span><span class="ab-d">'+o.d+'</span>');
       b.onclick = ()=>{
-        if(o.act==='leave'){ wildLoot('你悄然离去，什么也没惊动。', {}); return; }
+        if(o.act==='leave'){
+          const w = S.wild;
+          const back = w.cameFrom;
+          if(back){ w.px = back.x; w.py = back.y; }
+          w.phase = 'move';
+          w.node = null;
+          toast('你悄然离开，妖兽还在原处');
+          renderWild();
+          return;
+        }
         if(o.act==='calm-sneak'){
           if(roll(0.6)){
             const drops = {...beastDrops(node.beast.speciesId, 'calm')};

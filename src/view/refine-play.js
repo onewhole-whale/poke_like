@@ -34,7 +34,7 @@ function renderPreview(){
   requestAnimationFrame(()=>{ pb.querySelector('i').style.width = (info.chance*100)+'%'; });
   box.appendChild(pb);
   const v3 = el('div','preview-line','<span>异色概率</span><b>'+(info.shiny*100).toFixed(0)+'%</b>');
-  setTip(v3,'炼出灵兽之后单独再判定一次，与出灵概率分开计算。异色灵兽不占普通灵兽之位。');
+  setTip(v3,'炼出灵兽之后单独再判定一次。只有已放出异色立绘的物种才会出异色，异色不占普通灵兽之位。');
   box.appendChild(v3);
   const pb2 = el('div','prob-bar'); pb2.appendChild(el('i','gold',''));
   requestAnimationFrame(()=>{ pb2.querySelector('i').style.width = (info.shiny*100)+'%'; });
@@ -83,6 +83,38 @@ function renderPreview(){
 /* 炼化主流程 */
 function doRefine(){
   if(S.furnace.length===0) return;
+  // ===== 药剂：普通植物×2+生命精华×1→血瓶；普通矿物×2+生命精华×1→蓝瓶 =====
+  const plantN = S.furnace.filter(id=>id==='SC_none_normal_000002').length;
+  const oreN = S.furnace.filter(id=>id==='SC_none_normal_000008').length;
+  const lifeIn = S.furnace.filter(id=>id==='SC_none_fine_000001').length;
+  if(lifeIn>=1 && plantN>=2){
+    if((matState['SC_none_normal_000002']||0)<2 || (matState['SC_none_fine_000001']||0)<1){
+      toast('需要普通植物素材 ×2 与生命精华 ×1','bad'); return;
+    }
+    matState['SC_none_normal_000002']-=2;
+    matState['SC_none_fine_000001']--;
+    S.toolInv = S.toolInv||{};
+    S.toolInv['DJ_none_002020'] = (S.toolInv['DJ_none_002020']||0)+1;
+    S.furnace = [];
+    saveDraft();
+    toast('炼出：血瓶 ×1');
+    renderRefine();
+    return;
+  }
+  if(lifeIn>=1 && oreN>=2){
+    if((matState['SC_none_normal_000008']||0)<2 || (matState['SC_none_fine_000001']||0)<1){
+      toast('需要普通矿物素材 ×2 与生命精华 ×1','bad'); return;
+    }
+    matState['SC_none_normal_000008']-=2;
+    matState['SC_none_fine_000001']--;
+    S.toolInv = S.toolInv||{};
+    S.toolInv['DJ_none_002021'] = (S.toolInv['DJ_none_002021']||0)+1;
+    S.furnace = [];
+    saveDraft();
+    toast('炼出：蓝瓶 ×1');
+    renderRefine();
+    return;
+  }
   // ===== v1.17.0 锻造模式：蓝图分支（优秀/精良工具）=====
   const bpId = S.furnace.find(id=>{const it=ITEMS[id]; return it && it.type==='blueprint';});
   if(bpId){
@@ -179,7 +211,7 @@ function doRefine(){
       }
       if(rolled && sid){
         delete S.refineFate[sid];   // 出后只清被出那只
-        const shiny = roll(S.demo ? .18 : .05);
+        const shiny = hasShinyArt(sid) && roll(S.demo ? .18 : .05);
         outcome = {kind:'spirit', speciesId:sid, shiny, used:usedNames, stamp};
       }
     }

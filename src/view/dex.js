@@ -64,6 +64,11 @@ function renderDex(){
         (seen ? '<span class="elem-dot '+(ELEM[sp.elem]?ELEM[sp.elem].dot:'dot-rare')+'"></span>' : '<span class="dx-qmark">？</span>')+
         (shiny ? '<span class="dx-shiny" title="已获得异色">✦</span>' : '')+
       '</div>';
+    if(seen){
+      const face = el('div','dx-face','');
+      fillPortrait(face, sp.id, sp.elem, '🐾', 'card');
+      card.insertBefore(face, card.querySelector('.dx-body'));
+    }
     card.onclick = ()=> openDexDetail(sp.id);
     grid.appendChild(card);
   });
@@ -153,6 +158,9 @@ function openDexDetail(speciesId){
     ov.classList.add('open');
     return;
   }
+  const face = el('div','species-sheet','');
+  fillPortrait(face, sp.id, sp.elem, '🐾', 'sheet');
+  mb.appendChild(face);
   mb.appendChild(el('div','m-sub', ELEM[sp.elem]?ELEM[sp.elem].name:sp.elem+'系 · 速度 '+sp.speed+' · '+esc(sp.desc||'')));
   // 种族值
   const base = speciesBase(sp);

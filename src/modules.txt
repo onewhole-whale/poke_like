@@ -18,6 +18,7 @@ src/sim/inventory.js
 src/sim/state.js
 src/sim/beta.js
 src/sim/stats.js
+src/sim/shiny-art.js
 src/sim/evolve.js
 src/sim/growth.js
 src/view/dom.js
@@ -87,4 +88,7 @@ src/sim/equip.js
 src/view/detail.js
 src/view/coronation.js
 src/sim/coronation.js
+src/view/manual.js
+src/view/settings.js
+src/view/home.js
 src/app/boot.js

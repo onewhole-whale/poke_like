@@ -117,7 +117,11 @@ function canEvolve(spirit){
   return evoBranchesOf(sp)
     .map(b=>({to:b.to, targetSp:allSpeciesDef(b.to), cond:b.cond, ok:false}))
     .filter(b=>b.targetSp)
-    .map(b=>{ b.ok = evoCondOk(spirit, b.cond); return b; });
+    .map(b=>{
+      b.shinyBlocked = !!(spirit.shiny && !hasShinyArt(b.to));
+      b.ok = !b.shinyBlocked && evoCondOk(spirit, b.cond);
+      return b;
+    });
 }
 /* 反向回溯：beastSpeciesId 是否在 targetSpeciesId 的进化源链上（不含自身）。
    用于飞升承接校验——承接精英/完美灵兽时，妖兽必须来自其进化链上游形态。 */
@@ -143,6 +147,7 @@ function evolveSpirit(spirit, targetSpeciesId){
   if(!evoCondOk(spirit, branch.cond)) return {ok:false, msg:'进化条件未满足'};
   const targetSp = allSpeciesDef(targetSpeciesId);
   if(!targetSp) return {ok:false, msg:'目标物种不存在'};
+  if(spirit.shiny && !hasShinyArt(targetSpeciesId)) return {ok:false, msg:'进化目标没有异色立绘'};
   // M3-1-2: 扣除 mat 条件要求的素材词条单位（从低品质到高品质扣）
   for(const c of (branch.cond||[])){
     if(c.type==='mat'){

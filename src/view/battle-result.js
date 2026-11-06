@@ -36,16 +36,17 @@ function battleResultModal(b, sp){
         for(const k in drops){ const up=upMatFor(k,b.template); if(up!==k) drops[up]=(drops[up]||0)+drops[k]; }
       }
       applyLoot(drops);
+      const extraName = (b.template==='elite'||b.template==='boss') ? applyMapExtraDrops(b.template) : null;
       const g = gainExp(sp, b.beast.lvl||1, b.beast.rarity, b.beast.template);
       if(b.spHp>=b.spMax) sp.flawless=(sp.flawless||0)+1;
-      wildLoot('你杀死了'+b.beast.name+'。'+(g.lvls>0?'<br>'+sp.name+' 升到 Lv.'+sp.lvl+'！':''), drops);
+      wildLoot('你杀死了'+b.beast.name+'。'+(extraName?' 额外获得 '+extraName+'。':'')+(g.lvls>0?'<br>'+sp.name+' 升到 Lv.'+sp.lvl+'！':''), drops);
       wildNodeDone();
     };
     const catchBtn = el('button','btn primary','捕捉 · 留它活口');
     catchBtn.onclick = ()=>{
       window.__modalLock=false; closeOverlay();
       if(roll(.6)){
-        const shiny = roll(S.demo? .15 : .03);
+        const shiny = hasShinyArt(b.beast.speciesId) && roll(S.demo? .15 : .03);
         S.beasts.push({id:uid(), speciesId:b.beast.speciesId, shiny, caught:MAP_CONFIGS[S.wild.mapId].name+' · 活捉', nature:b.beast.nature||pick(NATURES).id, iv:b.beast.iv||{}});
         markDexSeen(b.beast.speciesId);   // v1.20.5 P0-4：捕捉成功点亮图鉴
         if(!sp.beastKinds) sp.beastKinds=[];

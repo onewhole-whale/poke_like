@@ -62,70 +62,156 @@ function renderSkillPool(s){
   return box;
 }
 function openDetail(id){
-  const s = spById(id); if(!s) return;
+  let s = spById(id);
+  const isBeast = !s;
+  if(isBeast){
+    s = S.beasts.find(x=>x.id===id);
+    if(!s) return;
+    const def = allSpeciesDef(s.speciesId);
+    if(def){
+      if(!s.name) s.name = def.name;
+      if(!s.elem) s.elem = def.elem;
+    }
+  }
+  if(!s) return;
   const st = spiritStats(s);
   const ov = $('#overlay'); const mb = $('#modal-box'); mb.innerHTML='';
-  mb.appendChild(el('h2',null, s.name+(s.shiny?' <span class="tag shiny">异色</span>':'')+' <span class="tag src">'+(s.shiny?'异色灵兽':'灵兽')+'</span>'+(s.coronation&&s.coronation.stage==='done'?' <span class="tag gold">已加冕</span>':'')));
-  // 性格（M2-A1）：显示 + 低成本调整（灵息 ×1）
-  const natRow = el('div','muted','性格：<b>'+natureDesc(s.nature)+'</b> <button class="btn sm" id="m-nat-edit">改 · 灵息×1</button>');
-  mb.appendChild(natRow);
-  const natBox = el('div','',''); natBox.style.display='none'; natBox.style.margin='6px 0 10px';
-  natBox.appendChild(el('div','tiny','消耗灵息结晶 ×1 更换性格。性格修正攻击/防御/特攻/特防/速度中的两项 ±10%，血量不受影响。'));
-  const natSel = document.createElement('select');
-  natSel.className='inp';
-  NATURES.forEach(n=>{ const op=document.createElement('option'); op.value=n.id; op.textContent=natureDesc(n.id); if(n.id===s.nature) op.selected=true; natSel.appendChild(op); });
-  natBox.appendChild(natSel);
-  const natOk = el('button','btn sm','确认更换');
-  natOk.onclick = ()=>{
-    if(S.aura<1){ toast('灵息结晶不足','bad'); return; }
-    S.aura--;
-    s.nature = natSel.value;
-    saveDraft();
-    openDetail(s.id);
-    toast('性格改为 '+natureDesc(s.nature));
-  };
-  natBox.appendChild(natOk);
-  mb.appendChild(natBox);
-  $('#m-nat-edit').onclick = ()=>{ natBox.style.display = natBox.style.display==='none' ? 'block' : 'none'; };
-  // 个体值（M2-A3）：显示 + 洗髓（洗髓露 ×1 重选）
+  mb.classList.add('is-detail');
+  const spDef = allSpeciesDef(s.speciesId);
+  const crownOn = (coronationStatus(s).stage && coronationStatus(s).stage!=='none') || checkpointState(s).some(x=>x.hit);
+  const tabDefs = [
+    {id:'base', name:'基础信息'},
+    {id:'lore', name:'来历'},
+    {id:'aff', name:'亲和'},
+    {id:'skill', name:'技能'},
+    {id:'evo', name:'进化'}
+  ];
+  if(crownOn) tabDefs.push({id:'crown', name:'加冕'});
+  const shell = el('div','detail-shell');
+  const tabBar = el('div','detail-tabs');
+  const main = el('div','detail-main');
+  const panes = {};
+  tabDefs.forEach(t=>{
+    const b = el('button','detail-tab'+(t.id==='base'?' on':''), t.name);
+    b.type = 'button';
+    b.onclick = ()=>{
+      tabBar.querySelectorAll('.detail-tab').forEach(x=>x.classList.toggle('on', x===b));
+      Object.keys(panes).forEach(id=>{ panes[id].style.display = id===t.id ? 'block' : 'none'; });
+    };
+    tabBar.appendChild(b);
+    panes[t.id] = el('div','detail-pane');
+    panes[t.id].style.display = t.id==='base' ? 'block' : 'none';
+  });
+  const closeBtn = el('button','btn ghost sm','收起');
+  closeBtn.type = 'button';
+  closeBtn.onclick = closeOverlay;
+  tabBar.appendChild(closeBtn);
+  shell.appendChild(tabBar);
+  shell.appendChild(main);
+  mb.appendChild(shell);
+  const base = panes.base;
+  base.appendChild(el('h2',null, s.name+(s.shiny?' <span class="tag shiny">异色</span>':'')+' <span class="tag src">'+(isBeast?(s.shiny?'异色妖兽':'妖兽'):(s.shiny?'异色灵兽':'灵兽'))+'</span>'+(s.coronation&&s.coronation.stage==='done'?' <span class="tag gold">已加冕</span>':'')));
+  const face = el('div','species-sheet','');
+  fillPortrait(face, s.speciesId, (spDef&&spDef.elem)||s.elem, '🐾', 'sheet', !!s.shiny);
+  base.appendChild(face);
+  const lvlNow = s.lvl||1;
+  const lvlCap = lvlCapOf(s);
+  const atCap = lvlNow >= lvlCap;
+  const expNeedNow = expToNext(lvlNow);
+  const expNow = s.exp||0;
+  const expPct = atCap ? 100 : (expNeedNow>0 ? Math.min(100, expNow/expNeedNow*100) : 0);
+  const expRow = el('div','exp-row');
+  expRow.innerHTML = '<span>Lv.'+lvlNow+' / '+lvlCap+'</span><span class="exp-track"><i style="width:'+expPct+'%"></i></span><span class="exp-val">'+(atCap?'已满级':expNow+' / '+expNeedNow)+'</span>';
+  base.appendChild(expRow);
+  const caps = statCeilings();
+  const bars = el('div','stat-bars');
+  [['生命', st.hp, caps.hp], ['攻击', st.atk, caps.atk], ['防御', st.def, caps.def], ['特攻', st.spa, caps.spa], ['特防', st.sdef, caps.sdef], ['速度', st.spd, caps.spd]].forEach(([name, cur, max])=>{
+    const pct = max>0 ? Math.min(100, cur/max*100) : 0;
+    const row = el('div','beta-row');
+    row.title = name+' '+cur+'，理论上限 '+max+(name==='生命'?'（满级、个体 20）':'（满级、个体 20、有利性格）');
+    row.innerHTML = '<span class="be">'+name+'</span><span class="bb"><i style="width:'+pct+'%"></i></span><span class="bv">'+cur+'</span>';
+    bars.appendChild(row);
+  });
+  base.appendChild(bars);
+  const fields = el('div','submit-fields');
   const ivSum = ivSummary(s);
-  const ivRow = el('div','muted','个体值：'+(ivSum.length? ivSum.map(([k,v])=>'<b>'+IV_NAME[k]+'+'+v+'</b>').join(' '):'无')+' <button class="btn sm" id="m-iv-edit">洗髓 · 洗髓露×1</button>');
-  mb.appendChild(ivRow);
-  $('#m-iv-edit').onclick = ()=>{
-    if(S.ivElixir<1){ toast('洗髓露不足','bad'); return; }
-    const mb2 = $('#modal-box'); mb2.innerHTML='';
-    mb2.appendChild(el('h2',null, s.name+' · 洗髓'));
-    mb2.appendChild(el('div','m-sub', '消耗 <b>洗髓露 ×1</b>，重定先天资质（最多 3 个面板属性有个体值，单项 1–20）。'));
-    const readIV = buildIVEditor(mb2, s.iv);
-    const ok = el('button','btn','确认洗髓');
-    ok.onclick = ()=>{
-      const r = readIV();
-      if(r.err){ toast(r.err,'bad'); return; }
+  const natRow = el('div','submit-field');
+  natRow.appendChild(el('span','sf-k','性格'));
+  natRow.appendChild(el('span','sf-v', natureDesc(s.nature)));
+  const natBtn = el('button','btn sm','提交');
+  natBtn.type = 'button';
+  natBtn.onclick = ()=> openSubmitDialog({
+    title:'更换性格',
+    desc:'性格修正攻击、防御、特攻、特防、速度中的两项 ±10%。生命不受影响。',
+    costs:[{name:'灵息结晶', need:1, have:S.aura}],
+    mount(box){
+      const sel = document.createElement('select');
+      sel.className = 'inp';
+      NATURES.forEach(n=>{ const op=document.createElement('option'); op.value=n.id; op.textContent=natureDesc(n.id); if(n.id===s.nature) op.selected=true; sel.appendChild(op); });
+      box.appendChild(sel);
+      return ()=>({value:sel.value});
+    },
+    onCancel(){ openDetail(s.id); },
+    onOk(extra){
+      if(S.aura<1){ toast('灵息结晶不足','bad'); return; }
+      S.aura--;
+      s.nature = extra.value;
+      saveDraft();
+      openDetail(s.id);
+      toast('性格改为 '+natureDesc(s.nature));
+    }
+  });
+  natRow.appendChild(natBtn);
+  const ivRow = el('div','submit-field');
+  ivRow.appendChild(el('span','sf-k','个体值'));
+  ivRow.appendChild(el('span','sf-v', ivSum.length? ivSum.map(([k,v])=>IV_NAME[k]+'+'+v).join(' '):'无'));
+  const ivBtn = el('button','btn sm','提交');
+  ivBtn.type = 'button';
+  ivBtn.onclick = ()=> openSubmitDialog({
+    title:'洗髓',
+    desc:'重定先天资质。最多 3 个面板属性有个体值，单项 1–20。',
+    costs:[{name:'洗髓露', need:1, have:S.ivElixir||0}],
+    mount(box){ return buildIVEditor(box, s.iv); },
+    onCancel(){ openDetail(s.id); },
+    onOk(extra){
+      if(extra.err){ toast(extra.err,'bad'); return; }
+      if((S.ivElixir||0)<1){ toast('洗髓露不足','bad'); return; }
       S.ivElixir--;
-      s.iv = r.iv;
+      s.iv = extra.iv;
       saveDraft();
       openDetail(s.id);
       toast('洗髓完成：'+ (ivSummary(s).length? ivSummary(s).map(([k,v])=>IV_NAME[k]+'+'+v).join(' '):'无个体值'));
-    };
-    mb2.appendChild(ok);
-    const cancel = el('button','btn ghost','取消');
-    cancel.onclick = ()=> openDetail(s.id);
-    mb2.appendChild(cancel);
-  };
-  mb.appendChild(el('div','muted','Lv.'+(s.lvl||1)+' / '+lvlCapOf(s)+' · 生命 '+st.hp+' · 攻击 '+st.atk+' · 防御 '+st.def+' · 特攻 '+st.spa+' · 特防 '+st.sdef+' · 速度 '+st.spd));
-  const grid = el('div','detail-grid');
-  // 左：亲和 + 履历
-  const left = el('div','');
-  left.appendChild(el('h3',null,'属性亲和 <button type="button" class="help-q" data-tip="各系当前亲和，未训练为 50，通常上限 200。亲和越高，同系技能占用越低。进化与加冕也会要求亲和达标。">?</button>'));
+    }
+  });
+  ivRow.appendChild(ivBtn);
+  fields.appendChild(natRow);
+  fields.appendChild(ivRow);
+  fields.appendChild(renderBreakthrough(s));
+  base.appendChild(fields);
+  panes.lore.appendChild(el('h3',null,'精灵来历'));
+  if(isBeast && s.caught) panes.lore.appendChild(el('div','muted','捕获于 '+esc(s.caught)));
+  if(spDef && spDef.desc) panes.lore.appendChild(el('div','muted', esc(spDef.desc)));
+  if(spDef && spDef.ecology) panes.lore.appendChild(el('div','muted', esc(spDef.ecology)));
+  const lg = el('div','log-list');
+  (s.log||[]).forEach(l=> lg.appendChild(el('div','log-line imp', l)));
+  if(!(s.log||[]).length && !(spDef && (spDef.desc || spDef.ecology)) && !(isBeast && s.caught)) panes.lore.appendChild(el('div','muted','尚无来历。'));
+  panes.lore.appendChild(lg);
+  panes.aff.appendChild(el('h3',null,'属性亲和 <button type="button" class="help-q" data-tip="各系当前亲和，未训练为 50，通常上限 200。亲和越高，同系技能占用越低。进化与加冕也会要求亲和达标。">?</button>'));
   const bbox = el('div','','');
   betaElems().forEach(e=> bbox.appendChild(affBarRow(s, e)));
-  left.appendChild(bbox);
-  left.appendChild(el('h3',null,'履历'));
-  const lg = el('div','log-list');
-  s.log.forEach(l=> lg.appendChild(el('div','log-line imp', l)));
-  left.appendChild(lg);
-  // 右：技能 + 专长
-  const right = el('div','');
+  panes.aff.appendChild(bbox);
+  const right = panes.skill;
+  if(isBeast){
+    right.appendChild(el('h3',null,'出战技能 <span class="sub">按等级解锁的直接攻击</span>'));
+    const moves = directUnlocked(s.elem, s.lvl||1);
+    if(!moves.length) right.appendChild(el('div','muted','这一级还没有解锁直接攻击。'));
+    moves.forEach(sk=>{
+      const row = el('div','skill-row');
+      row.innerHTML = '<span class="sk-main"><span class="sk-name">'+sk.name+' <span class="tiny">'+(ELEM[sk.elem]?ELEM[sk.elem].name:sk.elem)+'系</span></span>'+skillSheet(s, sk)+'</span>';
+      right.appendChild(row);
+    });
+    right.appendChild(el('div','muted','妖兽出战用这些已解锁的直接攻击。能不能进副本，在副本构建里已经拦住了。'));
+  } else {
   right.appendChild(el('h3',null,'装配技能 <span class="sub">总 '+masteryTotal(s)+'/'+s.masteryCap+' · 容量 '+usedCap(s)+'/'+capacityOf(s)+'</span> <button type="button" class="help-q" data-tip="熟练度总容量 '+s.masteryCap+'，已装配和待装配的都计入。满容后修炼新技能，旧技能熟练度会均匀让出。技能容量随等级提高。亲和不提高容量，只降低同系技能的占用。">?</button>'));
   const sbox = el('div','','');
   s.skills.forEach(sk=>{
@@ -133,9 +219,14 @@ function openDetail(id){
     const pct = Math.min(100, sk.mastery/s.masteryCap*100);
     row.innerHTML = '<span class="sk-main"><span class="sk-name">'+(sk.star?'★ ':'')+sk.name+' <span class="tiny">'+(ELEM[sk.elem]?ELEM[sk.elem].name:sk.elem)+'系</span></span>'+skillSheet(s, sk)+'</span><span class="sk-mastery"><i style="width:'+pct+'%"></i></span><span class="sk-val">'+sk.mastery+'</span>';
     if(sk.mastery<100){
-      const train = el('button','btn sm','修');
-      train.title = '消耗灵息结晶 ×1 修炼：+10 熟练度；若超总上限，其余技能均匀让渡';
-      train.onclick = ()=> trainSkill(s, sk, row);
+      const train = el('button','btn sm','提交');
+      train.onclick = ()=> openSubmitDialog({
+        title:'修炼「'+sk.name+'」',
+        desc:'熟练度 +10。若超过总上限，其余技能均匀让出。',
+        costs:[{name:'灵息结晶', need:1, have:S.aura}],
+        onCancel(){ openDetail(s.id); },
+        onOk(){ trainSkill(s, sk, row); }
+      });
       row.appendChild(train);
     }
     const un = el('button','btn sm ghost','卸');
@@ -146,24 +237,19 @@ function openDetail(id){
   });
   right.appendChild(sbox);
   right.appendChild(renderSkillPool(s));
+  }
   right.appendChild(el('h3',null,'专长 <button type="button" class="help-q" data-tip="秘境可获得。效果见各条说明，常见为提高亲和、熟练度上限或技能容量。">?</button>'));
   const pbox = el('div','','');
-  if(s.perks.length===0) pbox.appendChild(el('div','muted','尚无专长。'));
-  s.perks.forEach(pid=>{
+  const perkList = s.perks||[];
+  if(perkList.length===0) pbox.appendChild(el('div','muted','尚无专长。'));
+  perkList.forEach(pid=>{
     const pk = perkDef(pid);
     pbox.appendChild(el('div','perk-row','<span class="pk-name">'+(pk&&pk.star?'★ ':'')+(pk?pk.name:pid)+'</span><span class="tiny">'+(pk?pk.desc:'')+'</span><span class="pk-cost">'+(pk&&pk.quality?pk.quality:'')+'</span>'));
   });
   right.appendChild(pbox);
-  grid.appendChild(left); grid.appendChild(right);
-  mb.appendChild(grid);
-  // 进化（M2-B）：条件满足可触发，进化后切换物种
-  mb.appendChild(renderEvolveBox(s));
-  // 灵根突破（元素萌芽提升等级上限）
-  mb.appendChild(renderBreakthrough(s));
-  // 传说加冕区
-  mb.appendChild(renderCoronation(s));
-  mb.appendChild(el('div','modal-actions','<button class="btn ghost" id="m-close">收起</button>'));
-  $('#m-close').onclick = closeOverlay;
+  panes.evo.appendChild(renderEvolveBox(s));
+  if(crownOn) panes.crown.appendChild(renderCoronation(s));
+  tabDefs.forEach(t=> main.appendChild(panes[t.id]));
   ov.classList.add('open');
 }
 /* 进化面板（M2-B）：列出可进化分支，条件满足高亮按钮，未满足置灰并显示缺失条件；点击弹确认弹窗 */
@@ -208,9 +294,11 @@ function renderEvolveBox(s){
         '<span class="eb-name">'+p.name+'</span><span class="eb-track"><i style="width:'+pct+'%"></i></span><span class="eb-val">'+evoNum(p.cur)+'/'+evoNum(p.max)+'</span>'));
     });
     row.appendChild(el('div','tiny evolve-stats','种族值　生命 '+base.hp+' · 攻击 '+base.atk+' · 防御 '+base.def+' · 特攻 '+base.spa+' · 特防 '+base.sdef+' · 速度 '+base.spe));
-    const btn = el('button','btn sm'+(b.ok?' primary':''), b.ok ? '进化 → '+b.targetSp.name : '条件未达成');
+    const btn = el('button','btn sm'+(b.ok?' primary':''), b.ok ? '进化 → '+b.targetSp.name : (b.shinyBlocked ? '没有异色立绘' : '条件未达成'));
     btn.disabled = !b.ok;
-    if(!b.ok) btn.title = '尚缺：'+evoCondText(b.cond, s);
+    if(b.shinyBlocked) btn.title = '异色只能进化成有异色立绘的形态';
+    else if(!b.ok) btn.title = '尚缺：'+evoCondText(b.cond, s);
+    if(b.shinyBlocked) row.appendChild(el('div','tiny','异色只能进化成有异色立绘的形态，这一支还没放出。'));
     btn.onclick = ()=> openEvolveConfirm(s, b);
     row.appendChild(btn);
     box.appendChild(row);

@@ -2,16 +2,18 @@
 
 /* ================= 渲染入口 ================= */
 function render(){
+  if(S.view==='home' && typeof renderHome==='function') renderHome();
   if(S.view==='refine') renderRefine();
   if(S.view==='wild') renderWild();
-  if(S.view==='build') renderBuild();
-  if(S.view==='settle') renderSettle();
+  if(S.view==='build'){ if(settleLive()) renderSettle(); else renderBuild(); }
   if(S.view==='train') { tickTrain(); renderTrain(); }
   if(S.view==='stable') renderStable();
   if(S.view==='skills') renderSkills();
   if(S.view==='codex') renderCodex();
   if(S.view==='dex') renderDex();
   if(S.view==='matdex') renderMatDex();
+  if(S.view==='manual') renderManual();
+  if(S.view==='settings' && typeof renderSettings==='function') renderSettings();
 }
 
 /* ================= 炼化视图 ================= */

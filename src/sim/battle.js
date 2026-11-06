@@ -63,6 +63,44 @@ function markWin(b, sp){
     sp.nearDeathKills = (sp.nearDeathKills||0)+1;
   }
 }
+/* 战斗用药：占一回合，随后敌方行动 */
+function battleUseItem(itemId){
+  const sp = wildSpirit();
+  const b = S.wild.battle; if(!b || b.phase!=='fight') return;
+  if(b.charge && b.charge.side==='self'){ toast('蓄力中不能用药','bad'); return; }
+  if(b.lock && b.lock.side==='self'){ toast('连舞中不能用药','bad'); return; }
+  const it = (typeof ITEMS!=='undefined' && ITEMS[itemId]) || null;
+  if(!it || it.type!=='battle'){ toast('无法使用','bad'); return; }
+  if(!(S.toolInv[itemId]>0)){ toast('没有这件道具','bad'); return; }
+  S.toolInv[itemId]--;
+  if(!S.toolInv[itemId]) delete S.toolInv[itemId];
+  b.round++;
+  b.hitSelf = false; b.hitBeast = false;
+  b._fxQueue = [];
+  b._lastDmg = 0; b._lastCrit = false; b._lastHeal = 0;
+  const fakeSk = {id:itemId, name:it.name, elem:'', type:'状态'};
+  if(b.recharge && b.recharge.side==='self'){
+    b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 因<b class="hl">力竭</b>无法行动。'});
+    b.recharge = null;
+  } else if(!canAct(b.spSt, 'self')){
+    b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 陷入<b class="hl">'+statusText(b.spSt)+'</b>，无法行动。'});
+  } else {
+    if(it.battle==='hp'){
+      const heal = Math.max(1, Math.round(b.spMax * 0.25));
+      const got = Math.min(heal, Math.max(0, b.spMax - b.spHp));
+      b.spHp = Math.min(b.spMax, b.spHp + got);
+      b._lastHeal = got;
+      b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 喝下<b>血瓶</b>，回复 <b>'+got+'</b> 点生命。'});
+    } else if(it.battle==='energy'){
+      const before = b.energy||0;
+      b.energy = b.energyMax||10;
+      b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 喝下<b>蓝瓶</b>，能量回满（'+before+'→'+b.energy+'）。'});
+    }
+    finishPlayerAct(b, fakeSk, false, '');
+  }
+  if(b.phase==='fight') beastTurn(b);
+  battleRoundEnd(b, sp);
+}
 function battleSkill(skId){
   const sp = wildSpirit();
   const b = S.wild.battle; if(!b || b.phase!=='fight') return;
@@ -504,4 +542,67 @@ function beastTurn(b){
   // M3-1 受击回能：敌方攻击动作结算后我方 +1（多段只+1，上限20）
   b.energy = Math.min(b.energyMax||10, (b.energy||0)+1);
   if(b.spHp<=0){ b.phase='lost'; b.log.push({who:'bad', text: sp.name+' 力竭败退，侥幸脱身。'}); }
+}
+/* 自动战斗：期望伤害（去掉随机浮动，取 0.925 中位；不模拟暴击/专长细项，够用比大小） */
+function expectSkillDamage(sp, b, sk){
+  if(!sk || !(sk.power>0) || sk.kind==='mechanic') return 0;
+  const hits = Math.max(1, sk.hits||1);
+  const powerBase = sk.power||0;
+  const per = Math.max(1, Math.round(powerBase/hits));
+  const owned = (sp.skills||[]).find(x=>(x.id||x)===sk.id);
+  const mMult = typeof masteryMult==='function' ? masteryMult(owned && owned.mastery!=null ? owned.mastery : (sk.mastery!=null?sk.mastery:30)) : 1;
+  const track = sk.track || (typeof DIRECT_TRACK!=='undefined' && DIRECT_TRACK[sk.elem]) || 'phys';
+  const atkSide = Math.max(1, Math.round(track==='spec' ? (b.spSpa||0) : (b.spAtk||0)));
+  const defSide = Math.max(1, Math.round(track==='spec' ? (b.beast.sdef||1) : (b.beast.def||1)));
+  const aLvl = b.spLvl||1;
+  const lvlTerm = Math.floor(2*aLvl/5 + 2);
+  let dmg = Math.floor(Math.floor(lvlTerm * per * mMult * atkSide / defSide / 50) + 2);
+  dmg *= (typeof typeMult==='function' ? typeMult(sk.elem, b.beast.elem) : 1);
+  if(sk.elem===sp.elem) dmg *= 1.25;
+  dmg *= 0.925;
+  return Math.max(0, Math.round(dmg) * hits);
+}
+function normalizeAutoCfg(cfg){
+  cfg = cfg || (typeof S!=='undefined' && S.autoCfg) || {};
+  const strat = cfg.regenStrategy;
+  return {
+    useHpPotion: cfg.useHpPotion!==false,
+    useMpPotion: cfg.useMpPotion!==false,
+    regenStrategy: (strat==='maxSkill'||strat==='zero'||strat==='noAttack') ? strat : 'noAttack'
+  };
+}
+/* 兼容旧调用：只返回技能 id */
+function pickAutoBattleSkill(sp, b, usableOf){
+  const act = pickAutoBattleAction(sp, b, usableOf);
+  return (act && act.kind==='skill') ? act.id : 'regen';
+}
+/* 自动战斗动作：{kind:'skill',id} | {kind:'item',id}
+   优先：低血喝血瓶 → 最大期望伤害技 → 不够能耗喝蓝瓶 → 按回能策略回能/次优攻击。 */
+function pickAutoBattleAction(sp, b, usableOf){
+  const can = usableOf || (d=>skillUsable(sp, d));
+  const cfg = normalizeAutoCfg();
+  const HP_POT = 'DJ_none_002020', MP_POT = 'DJ_none_002021';
+  if(cfg.useHpPotion && b.spMax>0 && (b.spHp/b.spMax)<0.5 && (S.toolInv[HP_POT]||0)>0){
+    return {kind:'item', id:HP_POT};
+  }
+  let bestAll=null, bestAllDmg=0, bestUse=null, bestUseDmg=0;
+  (sp.skills||[]).forEach(row=>{
+    const sk = skillById(row && (row.id||row));
+    if(!sk) return;
+    const exp = expectSkillDamage(sp, b, sk);
+    if(exp>bestAllDmg){ bestAllDmg=exp; bestAll=sk; }
+    if(exp>0 && can(sk) && exp>bestUseDmg){ bestUseDmg=exp; bestUse=sk; }
+  });
+  if(bestAll && bestAllDmg>0 && can(bestAll)) return {kind:'skill', id:bestAll.id};
+  if(bestAll && bestAllDmg>0 && !can(bestAll) && cfg.useMpPotion && (S.toolInv[MP_POT]||0)>0){
+    return {kind:'item', id:MP_POT};
+  }
+  if(cfg.regenStrategy==='maxSkill') return {kind:'skill', id:'regen'};
+  if(cfg.regenStrategy==='zero'){
+    if((b.energy||0)<=0) return {kind:'skill', id:'regen'};
+    if(bestUse) return {kind:'skill', id:bestUse.id};
+    return {kind:'skill', id:'regen'};
+  }
+  if(bestUse) return {kind:'skill', id:bestUse.id};
+  return {kind:'skill', id:'regen'};
 }

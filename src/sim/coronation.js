@@ -34,17 +34,17 @@ function trainSkill(s, sk, row){
    返回内容必须经管理员（玩家）审核，通过才落实，驳回则携建议重写。 */
 const CHECKPOINTS = [
   {id:'master400', name:'一技入化', desc:'任一技能熟练度达到 400%，且使用超过 1000 次 —— 常态上限 150%，这是撑破上限的绝活',
-   cond:s=>!!(s.skills.find(x=>x.mastery>=400 && (x.uses||0)>=1000))},
+   cond:s=>!!((s.skills||[]).find(x=>x.mastery>=400 && (x.uses||0)>=1000))},
   {id:'hepta', name:'万象通明', desc:'至少 7 系亲和力达到 100 —— 训练亲和填不满七系，必有专长破格',
    cond:s=>Object.keys(ELEM).filter(e=>affOf(s,e)>=100).length>=7},
   {id:'aff500', name:'一念通天', desc:'单系亲和力超过 500 —— 上限 200 挡不住它，这是深度上的极限',
    cond:s=>Object.keys(ELEM).some(e=>affOf(s,e)>500)},
   {id:'century', name:'百技归一', desc:'熟练度达到 100% 的技能不少于 7 个',
-   cond:s=>s.skills.filter(x=>x.mastery>=100).length>=7},
+   cond:s=>(s.skills||[]).filter(x=>x.mastery>=100).length>=7},
   {id:'legendary5', name:'天选之人', desc:'拥有不少于 5 个传奇品质专长 —— 传奇专长本就万中无一',
    cond:s=>(s.perks||[]).filter(p=>{ const d=perkDef(p); return d&&(d.quality==='legend'||d.star); }).length>=5},
   {id:'forbidden', name:'破禁者', desc:'携带 3 个不同属性、亲和力归零的技能，且全部修炼至 100% —— 零亲和本应禁带，你偏要练成禁术',
-   cond:s=>{ const z=s.skills.filter(x=>x.elem && x.elem!=='none' && affOf(s,x.elem)===0 && x.mastery>=100); return new Set(z.map(x=>x.elem)).size>=3; }},
+   cond:s=>{ const z=(s.skills||[]).filter(x=>x.elem && x.elem!=='none' && affOf(s,x.elem)===0 && x.mastery>=100); return new Set(z.map(x=>x.elem)).size>=3; }},
   {id:'rainbow', name:'异色飞升', desc:'以异色妖兽承接炼化之灵飞升 —— 1% 出灵兽叠乘异色判定，再赌一只异色妖兽，此路近乎不可能',
    cond:s=>!!s.rainbowAscended},
 ];

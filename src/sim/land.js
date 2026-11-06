@@ -8,6 +8,10 @@ function landSpirit({speciesId, shiny, source, fromRefine, beastId, rainbow, nat
     beast = S.beasts.find(b=>b.id===beastId);
     if(beast && beast.shiny) shiny = true;
   }
+  if(shiny && !hasShinyArt(speciesId)){
+    shiny = false;
+    rainbow = false;
+  }
   // M2-B 上游校验：承接 elite/perfect 灵兽时，妖兽必须来自其进化链上游形态
   const tgtSp = allSpeciesDef(speciesId);
   if(beast && tgtSp && (tgtSp.rarity==='elite' || tgtSp.rarity==='perfect')){

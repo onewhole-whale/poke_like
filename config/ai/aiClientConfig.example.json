@@ -1,0 +1,14 @@
+{
+  "apiKey": "",
+  "apiKeys": [],
+  "baseUrl": "https://ark.cn-beijing.volces.com/api/v3",
+  "modelId": "doubao-seed-character-260628",
+  "kpModelId": "doubao-seed-2-0-lite-260215",
+  "visionModelId": "doubao-seed-2-1-lite-260915",
+  "imageModelId": "doubao-seedream-4-0-250828",
+  "imageModelIds": [
+    "doubao-seedream-4-0-250828",
+    "doubao-seedream-4-5-251128"
+  ],
+  "imageModelSwitchEveryCalls": 20
+}

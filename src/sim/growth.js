@@ -152,11 +152,7 @@ function init(){
       if(d.matSeen && typeof d.matSeen==='object') S.matSeen = d.matSeen;
       // M3-1：炼化缘分保底 + 工具背包持久化（旧档缺省 {}）
       if(d.refineFate && typeof d.refineFate==='object') S.refineFate = d.refineFate;
-      if(d.toolInv && typeof d.toolInv==='object') S.toolInv = d.toolInv;
-      else if(typeof d.tools==='number' && d.tools>0 && !S.toolInv['pick-normal']){
-        // 旧档 d.tools 数字 → 普通矿镐 ×N（用存档值，非页面默认）
-        S.toolInv = Object.assign({}, S.toolInv, {'pick-normal':d.tools});
-      }
+      // 工具/蓝图改由玩法槽存，不再从公用 codex 灌进本局
       // 自定义素材的持有数量并入 matState
       Object.keys(S.customMats).forEach(id=>{ matState[id] = S.customMats[id].count||0; });
       migrateCodexData();   // 旧属性（time/star/chaos）迁移到 15 常驻系
@@ -165,14 +161,16 @@ function init(){
   collectTagLib();
   if(!S.matSeen) S.matSeen = {};
   Object.keys(matState).forEach(id=>{ if((matState[id]||0)>0) S.matSeen[id] = true; });
-  if(typeof loadPlay==='function' && loadPlay()) return;
-  // 初始灵兽：一只炼化而来的烬烬狼
-  S.spirits.push(makeSpirit('JL_fire_normal_0001', false, '由「焰髓石 ×2」炼化而生，先天资质圆满'));
-  markDexSeen('JL_fire_normal_0001');   // M2-C：初始灵兽点亮图鉴
-  // 初始妖兽：含一只异色燎雀
-  S.beasts.push(makeBeast('JL_fire_normal_0001', false, '落日坡 · 巡猎'));
-  S.beasts.push(makeBeast('JL_water_normal_0023', false, '夜雨溪谷 · 垂钓'));
-  S.beasts.push(makeBeast('JL_thunder_normal_0038', false, '雷殛岭 · 伏击'));
-  S.beasts.push(makeBeast('JL_fire_normal_0016', true, '焚风谷深处 · 仅此一只'));
-  S.logs.unshift({t:'初入山门', cls:'', text:'你从师父手中接过炼妖壶。壶身温热，像在等第一炉火。'});
+  if(typeof migrateLegacyPlaySlots==='function') migrateLegacyPlaySlots();
+  // 启动不自动读档；先备一局内存开局数据，主页「开始」会再 reset
+  if(typeof clearPlayMemoryToNewGame==='function') clearPlayMemoryToNewGame();
+  else {
+    S.spirits.push(makeSpirit('JL_fire_normal_0001', false, '由「焰髓石 ×2」炼化而生，先天资质圆满'));
+    markDexSeen('JL_fire_normal_0001');
+    S.beasts.push(makeBeast('JL_fire_normal_0001', false, '落日坡 · 巡猎'));
+    S.beasts.push(makeBeast('JL_water_normal_0023', false, '夜雨溪谷 · 垂钓'));
+    S.beasts.push(makeBeast('JL_thunder_normal_0038', false, '雷殛岭 · 伏击'));
+    S.beasts.push(makeBeast('JL_fire_normal_0016', true, '焚风谷深处 · 仅此一只'));
+    S.logs.unshift({t:'初入山门', cls:'', text:'你从师父手中接过炼妖壶。壶身温热，像在等第一炉火。'});
+  }
 }

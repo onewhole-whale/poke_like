@@ -43,7 +43,7 @@ function claimDexMilestone(ms){
   S.dexClaimed = S.dexClaimed||[];
   S.dexClaimed.push(ms.id);
   saveDraft();
-  toast('图鉴奖励：洗髓露 ×'+ms.reward.qty,'gold');
+  toast('图鉴奖励：洗髓露 ×'+ms.reward.qty+(S.activeSlot?'':'（记得存档到槽位）'),'gold');
   return true;
 }
 /* 某物种是否已被捕获过异色（用于卡片 ✦ 标记） */

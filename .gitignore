@@ -1,0 +1,14 @@
+config/ai/aiClientConfig.json
+cache/
+__pycache__/
+*.pyc
+
+# 美术与本地生成物不入库（立绘/瓦片/源稿本地自备）
+assets/art/
+assets/portraits/
+assets/tiles/
+
+# 编辑器与本地密钥
+.cursor/
+.env
+*.pem

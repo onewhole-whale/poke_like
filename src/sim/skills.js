@@ -281,6 +281,11 @@ const ITEMS = (function(){
       n++;
     });
   });
+  // 战斗消耗品（号段避开 002000–002015）
+  ITEMS['DJ_none_002020'] = {id:'DJ_none_002020', name:'血瓶', elem:'none', type:'battle', battle:'hp',
+    tags:['药剂'], count:0, desc:'战斗中使用：回复最大生命的 25%，占用一回合。'};
+  ITEMS['DJ_none_002021'] = {id:'DJ_none_002021', name:'蓝瓶', elem:'none', type:'battle', battle:'energy',
+    tags:['药剂'], count:0, desc:'战斗中使用：能量回满，占用一回合。'};
 })();
 /* 精魄拓池表：投入精魄侵占对应属性 250 分存在分后，奖励从本表抽取（常驻条目）。
    对应属性若有精灵专属精魄（如烬烬狼精魄），开启拓池时消耗 1 枚，只影响该属性。 */

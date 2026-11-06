@@ -68,6 +68,45 @@ function dgSkillUsable(sk){
     : Math.max(0,(sk.energy||0)-(b.spSt.costdown||0)-(b.spSt.energyDown||0)+(b.spSt.energyUp||0));
   return b.energy >= cost;
 }
+function dgBattleUseItem(itemId){
+  const st = S.settle; const sp = spById(st.spiritId);
+  const b = st.battle; if(!b || b.phase!=='fight') return;
+  if(b.charge && b.charge.side==='self'){ toast('蓄力中不能用药','bad'); return; }
+  if(b.lock && b.lock.side==='self'){ toast('连舞中不能用药','bad'); return; }
+  const it = (typeof ITEMS!=='undefined' && ITEMS[itemId]) || null;
+  if(!it || it.type!=='battle'){ toast('无法使用','bad'); return; }
+  if(!(S.toolInv[itemId]>0)){ toast('没有这件道具','bad'); return; }
+  S.toolInv[itemId]--;
+  if(!S.toolInv[itemId]) delete S.toolInv[itemId];
+  b.round++;
+  b.hitSelf = false; b.hitBeast = false;
+  b._fxQueue = [];
+  b._lastDmg = 0; b._lastCrit = false; b._lastHeal = 0;
+  const fakeSk = {id:itemId, name:it.name, elem:'', type:'状态'};
+  dgRoundStart(b, st, sp);
+  if(b.phase!=='fight'){ st.phase = b.phase; renderSettle(); return; }
+  if(b.recharge && b.recharge.side==='self'){
+    b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 因<b class="hl">力竭</b>无法行动。'});
+    b.recharge = null;
+  } else if(!canAct(b.spSt, 'self')){
+    b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 陷入<b class="hl">'+statusText(b.spSt)+'</b>，无法行动。'});
+  } else {
+    if(it.battle==='hp'){
+      const heal = Math.max(1, Math.round(b.spMax * 0.25));
+      const got = Math.min(heal, Math.max(0, b.spMax - b.spHp));
+      b.spHp = Math.min(b.spMax, b.spHp + got);
+      b._lastHeal = got;
+      b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 喝下<b>血瓶</b>，回复 <b>'+got+'</b> 点生命。'});
+    } else if(it.battle==='energy'){
+      const before = b.energy||0;
+      b.energy = b.energyMax||10;
+      b.log.push({who:'pl', text:'第 <b>'+b.round+'</b> 轮 · '+sp.name+' 喝下<b>蓝瓶</b>，能量回满（'+before+'→'+b.energy+'）。'});
+    }
+    finishPlayerAct(b, fakeSk, false, '');
+  }
+  if(b.phase==='fight') dgBeastTurn(b);
+  dgRoundEnd(b, st, sp);
+}
 function dgBattleSkill(skId){
   const st = S.settle; const sp = spById(st.spiritId);
   const b = st.battle; if(!b || b.phase!=='fight') return;

@@ -37,10 +37,13 @@ function renderStable(){
     S.beasts.forEach(b=>{
       const sp = allSpeciesDef(b.speciesId);
       const card = el('div','s-card'+(b.shiny?' shiny-card':''));
-      card.innerHTML = '<div class="sc-head"><div><div class="sc-name">'+sp.name+'</div>'+
-        '<div class="sc-elem">'+elemTag(sp.elem)+'</div></div>'+
-        (b.shiny?'<span class="tag shiny">异色</span>':'')+'</div>'+
-        '<div class="sc-bar"><span>性格 '+natureDesc(b.nature)+'</span></div>';
+      card.innerHTML = '<div class="sc-head"><div class="sc-name">'+elemTag(sp.elem)+sp.name+
+        '<span class="sc-lv">Lv.'+(b.lvl||1)+'</span>'+
+        (b.shiny?'<span class="tag shiny">异色</span>':'')+'</div></div>';
+      const face = el('div','sc-face','');
+      fillPortrait(face, b.speciesId, sp.elem, '🐾', 'card', !!b.shiny);
+      card.appendChild(face);
+      card.onclick = ()=> openDetail(b.id);
       bs.appendChild(card);
     });
   }
@@ -48,20 +51,23 @@ function renderStable(){
 function spiritCard(s){
   const sp = allSpeciesDef(s.speciesId);
   const card = el('div','s-card'+(s.shiny?' shiny-card':''));
-  card.innerHTML = '<div class="sc-head"><div><div class="sc-name">'+s.name+'</div>'+
-    '<div class="sc-elem">'+elemTag(sp.elem)+' '+(sp.rarity!=='normal'?'<span class="badge">'+gradeName(sp)+'</span>':'')+(s.coronation&&s.coronation.stage==='done'?'<span class="badge">已加冕</span>':'')+'</div></div>'+
-    (s.shiny?'<span class="tag shiny">异色</span>':'')+'</div>'+
-    '<div class="sc-bar"><span>Lv.'+(s.lvl||1)+'</span><span>性格 '+natureDesc(s.nature)+'</span></div>';
+  card.innerHTML = '<div class="sc-head"><div class="sc-name">'+elemTag(sp.elem)+s.name+
+    '<span class="sc-lv">Lv.'+(s.lvl||1)+'</span>'+
+    (sp.rarity!=='normal'?'<span class="badge">'+gradeName(sp)+'</span>':'')+
+    (s.coronation&&s.coronation.stage==='done'?'<span class="badge">已加冕</span>':'')+
+    (s.shiny?'<span class="tag shiny">异色</span>':'')+
+    '</div></div>';
+  const face = el('div','sc-face','');
+  fillPortrait(face, s.speciesId, sp.elem, '🐾', 'card', !!s.shiny);
+  card.appendChild(face);
   card.onclick = ()=> openDetail(s.id);
   return card;
 }
 function sproutCard(elem, n){
   const name = (elem==='any'?'无主':elemName(elem))+'元素萌芽';
   const card = el('div','s-card');
-  card.innerHTML = '<div class="sc-head"><div><div class="sc-name">'+name+'</div>'+
-    '<div class="sc-elem">'+(elem==='any'?'':elemTag(elem))+'</div></div>'+
-    '<span class="tag">×'+n+'</span></div>'+
-    '<div class="sc-bar"><span>Lv.1</span><span>性格 '+natureDesc('serious')+'</span></div>';
+  card.innerHTML = '<div class="sc-head"><div class="sc-name">'+name+
+    '<span class="sc-lv">Lv.1</span></div><span class="tag">×'+n+'</span></div>';
   card.onclick = ()=> openSproutDetail(elem);
   return card;
 }

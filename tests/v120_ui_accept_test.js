@@ -56,7 +56,7 @@ async function main(){
         S.dexSeen = {}; S.dexClaimed = {};
         route();
         // 直接 startBattle
-        startBattle({speciesId:'JL_water_normal_0001', elem:'water', lvl:8, rarity:'normal'});
+        startBattle({speciesId:'JL_water_normal_0023', elem:'water', lvl:8, rarity:'normal'});
         return {battle: !!b, phase: b && b.phase, enemy: b && b.beast && b.beast.name};
       } catch(e) { return {err: e.message}; }
     })()

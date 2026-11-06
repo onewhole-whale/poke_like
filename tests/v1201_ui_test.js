@@ -28,7 +28,7 @@ await send('Runtime.evaluate', {expression: `
     S.spirits = [{id:'sp1', speciesId:'JL_fire_normal_0001', elem:'fire', lvl:10, hp:100, maxHp:100, energy:5, energyMax:10, iv:{}, nature:'', skills:['f_ember'], exp:0, aff:{}, perks:[], shiny:false, ivs:{}, name:'测试火狐'}];
     S.team = ['sp1']; S.mats = {}; S.dexSeen = {}; S.dexClaimed = {};
     location.hash = '#/wild'; route();
-    startBattle({speciesId:'JL_water_normal_0001', elem:'water', lvl:8, rarity:'normal', name:'测试水妖'});
+    startBattle({speciesId:'JL_water_normal_0023', elem:'water', lvl:8, rarity:'normal', name:'测试水妖'});
     return 'ok';
   })()
 `});

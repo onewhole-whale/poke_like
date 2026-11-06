@@ -1,6 +1,15 @@
 
 const S = {
-  view:'refine',
+  view:'home',
+  sessionLive:false,      // false=停在主页面；开始/读档后为 true
+  activeSlot:null,        // 1–5：本局最近读写的槽；未存未读则为 null
+  battleSpeed:'1x',       // 战斗演出：'1x' | '2x' | 'skip'（只加速/跳过演出，不跳过战斗）
+  autoBattle:false,       // 战斗内开关：按 autoCfg 自动选招/用药
+  autoCfg:{               // 设置页可改；本机 settings 键持久化
+    useHpPotion:true,     // 血量 <50% 时尝试血瓶
+    useMpPotion:true,     // 最大期望伤害技能耗不够时尝试蓝瓶
+    regenStrategy:'noAttack' // maxSkill | zero | noAttack（回能时机）
+  },
   demo:false,
   aura:6,                 // 灵息结晶（开启副本的通用素材）
   skillEdits:{},           // 技能编辑器草稿：id → 技能定义（覆盖 SKILLS 查询）

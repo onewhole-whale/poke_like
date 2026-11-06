@@ -1,15 +1,42 @@
 
 
 /* ================= 路由 ================= */
+function settleLive(){
+  const st = S.settle;
+  return !!(st && st.spiritId && st.phase && st.phase!=='idle' && spById(st.spiritId));
+}
 function route(){
   if(typeof applyModeButtons==='function') applyModeButtons();
-  const h = location.hash.replace(/^#\/?/,'') || 'refine';
-  S.view = ['refine','wild','build','settle','train','stable','skills','codex','dex','matdex'].includes(h) ? h : 'refine';
+  let h = location.hash.replace(/^#\/?/,'') || 'home';
+  if(!S.sessionLive){
+    h = 'home';
+    if(location.hash && location.hash!=='#/home' && location.hash!=='#/' && location.hash!=='#'){
+      /* 未进入本局时锁在主页 */
+    }
+  }
+  const catalog = h==='dex' || h==='skills' || h==='matdex' || h==='manual' || h==='settings';
+  if(S.sessionLive && typeof inAdventure==='function' && inAdventure() && h!=='wild' && !catalog){
+    h = 'wild';
+    if(location.hash !== '#/wild'){ location.hash = '#/wild'; return; }
+  }
+  if(h==='settle') h = 'build';
+  S.view = ['home','refine','wild','build','train','stable','skills','codex','dex','matdex','manual','settings'].includes(h) ? h : (S.sessionLive?'refine':'home');
+  const showRun = S.view==='build' && settleLive();
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  $('#view-'+S.view).classList.add('active');
+  if(S.view==='home') $('#view-home').classList.add('active');
+  else $(showRun ? '#view-settle' : '#view-'+S.view).classList.add('active');
+  const chrome = !!(S.sessionLive && S.view!=='home');
   document.querySelectorAll('#nav button').forEach(b=>{
-    b.classList.toggle('active', b.dataset.route===S.view);
+    b.style.display = chrome ? '' : 'none';
+    const on = b.dataset.route===S.view || (b.dataset.route==='dex' && (S.view==='skills' || S.view==='matdex'));
+    b.classList.toggle('active', on);
   });
+  const menuWrap = $('#menu-wrap');
+  if(menuWrap) menuWrap.style.display = chrome ? '' : 'none';
+  document.querySelectorAll('.catalog-tabs button').forEach(b=>{
+    b.classList.toggle('on', b.dataset.route===S.view);
+  });
+  if(typeof syncAdventureChrome==='function') syncAdventureChrome();
   render();
 }
 window.addEventListener('hashchange', route);
